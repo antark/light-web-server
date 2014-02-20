@@ -12,7 +12,7 @@ void serve_static(int fd, char *filename, int filesize);     /* static service *
 void serve_dynamic(int fd, char *filename, char *cgiargs);   /* dynamic service */
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);    /* error response */
 
-sbuf_t sbuf;     /* connection buffer */
+sbuf_t sbuf;     /* connection buffer pool */
 
 int main(int argc, char *argv[] )
 {
@@ -27,8 +27,8 @@ int main(int argc, char *argv[] )
     }
     port = atoi(argv[1]);    /* numeric port */
     
-    sbuf_init(&sbuf, SBUFSIZE );    /* init connection buffer */
-    listenfd = open_listenfd( port );   /* open listen port and get listen fd */
+    sbuf_init(&sbuf, SBUFSIZE);    /* init connection buffer */
+    listenfd = open_listenfd(port);   /* open listen port and get listen fd */
 
     for(i = 0; i < NTHREADS; i++){   /* create worker threads */
         ret = pthread_create(&tid, NULL, thread, NULL);
@@ -37,26 +37,27 @@ int main(int argc, char *argv[] )
         }
     }
     while(1){
-        connfd = accept(listenfd, (SA*)&clientaddr, &clientlen);   /* get request from client */
+        connfd = accept(listenfd, (SA*)&clientaddr, &clientlen);   /* get request from client by IPv4 network */
         printf("client (%s:%d) has established connection, and connfd is %d\n",
-               inet_ntoa( clientaddr.sin_addr ),    /* client's IP address */
-               ntohs( clientaddr.sin_port), connfd );    /* client's port */
-        sbuf_insert( &sbuf, connfd );    /* insert connfd into buffer */
+               inet_ntoa(clientaddr.sin_addr),    /* client's IP address */
+               ntohs(clientaddr.sin_port), connfd);    /* client's port */
+        sbuf_insert(&sbuf, connfd);    /* insert connfd into buffer */
     }
+    return 0;
 }
 
-void *thread( void *vargp )   /* thread routine */
+void *thread(void *vargp)   /* thread routine */
 {
-    pthread_detach( pthread_self() );   /* detach thread */
+    pthread_detach(pthread_self());   /* detach thread, and clean thread automatically */
     while(1){
-        int connfd = sbuf_remove( &sbuf );     /* remove connfd from buffer */
-        doit( connfd );                       /* serve client */
-        close( connfd );                      /* close connfd */
+        int connfd = sbuf_remove(&sbuf);     /* remove connfd from buffer */
+        doit(connfd);                       /* serve client */
+        close(connfd);                      /* close connfd */
         printf("connfd %d has closed.\n", connfd);
     }
 }
 
-void doit( int fd )     /* support service through fd */
+void doit(int fd)     /* support service through fd */
 {
     int is_static;   /* is static page ? */
     struct stat sbuf;   /* file stat */
@@ -64,15 +65,17 @@ void doit( int fd )     /* support service through fd */
     char filename[MAXLINE], cgiargs[MAXLINE];
     rio_t rio;    /* RIO buffer, not standard I/O */
 
-    rio_readinitb( &rio, fd );    /* init RIO buffer */
-    rio_readlineb( &rio, buf, MAXLINE );   /* read the request line */
-    sscanf( buf, "%s %s %s", method, url, version );    /* method, url, version */
+    rio_readinitb(&rio, fd);    /* init RIO buffer */
+    
+    rio_readlineb(&rio, buf, MAXLINE );   /* read the request line */
+    sscanf(buf, "%s %s %s", method, url, version);    /* method, url, version */
+    
     if( strcasecmp(method, "GET") ){    /* method is not GET ? */
-        clienterror( fd, method, "501", "Not implemented",
-                     "ws does not implement this method");
+        clienterror(fd, method, "501", "Not implemented", "ws does not implement this method except GET");
         return ;
     }
-    read_requesthdrs( &rio );   /* process request headers */
+    read_requesthdrs(&rio);   /* process request headers */
+    
     /* parse url */
     is_static = parse_url( url, filename, cgiargs );
     /* response */
@@ -120,13 +123,24 @@ void clienterror( int fd, char *cause, char *errnum, char *shortmsg, char *longm
     /* print the response body */
     rio_writen( fd, body, strlen(body) );
 }
-void read_requesthdrs( rio_t *rp )
+
+
+void read_requesthdrs(rio_t *rp)
 {
-    char buf[MAXLINE];
+    char buf[MAXLINE], key[MAXLINE], value[MAXLINE];
+    char *p;
     
-    rio_readlineb( rp, buf, MAXLINE);
-    while( strcmp(buf, "\r\n"))   /* until encounter the empty line */
-        rio_readlineb( rp, buf, MAXLINE );    /* next line */
+    rio_readlineb(rp, buf, MAXLINE);
+    while(strcmp(buf, "\r\n")){   /* until encounter the empty line */
+        p = strchr(buf, ':');
+        if(p){
+            *p = '\0';
+            sscanf(buf, "%s", key);
+            sscanf(p+1, "%s", value);
+            printf("%s : %s\n", key, value);
+        }
+        rio_readlineb(rp, buf, MAXLINE );    /* next line */
+    }
     return ;
 }
 
