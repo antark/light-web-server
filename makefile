@@ -6,3 +6,5 @@ sock.o:sock.c
 	gcc -c sock.c
 syn.o:syn.c
 	gcc -c syn.c
+clean:
+	rm *.o

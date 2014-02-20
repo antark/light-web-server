@@ -23,8 +23,10 @@
 #include<netinet/in.h>
 #include<arpa/inet.h>
 
+/* the number of work pthreads */
 #define  NTHREADS        100
 #define  SBUFSIZE        1024
+
 #define  MAXLINE         8192
 #define  RIO_BUFSIZE     8192
 #define  LISTENQ         1024

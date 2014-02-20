@@ -3,35 +3,41 @@
 #include "rio.h"
 #include "syn.h"
 
-void *thread( void *vargp );    /* thread routine */
-void doit( int connfd );        /* serve the client's request */
-void read_requesthdrs( rio_t *rp);     /* process the request's headers */
+void *thread(void *vargp );    /* thread routine */
+void doit(int connfd );        /* serve the client's request */
+void read_requesthdrs(rio_t *rp);     /* process the request's headers */
 void get_filetype(char *filename, char *filetype);    /* get the file type */
-int parse_url( char *url, char *filename, char *cgiargs);     /* parse URL */
-void serve_static( int fd, char *filename, int filesize);     /* static service */
-void serve_dynamic( int fd, char *filename, char *cgiargs);   /* dynamic service */
-void clienterror( int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);    /* error response */
+int parse_url(char *url, char *filename, char *cgiargs);     /* parse URL */
+void serve_static(int fd, char *filename, int filesize);     /* static service */
+void serve_dynamic(int fd, char *filename, char *cgiargs);   /* dynamic service */
+void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);    /* error response */
 
 sbuf_t sbuf;     /* connection buffer */
 
-int main( int argc, char *argv[] )
+int main(int argc, char *argv[] )
 {
-    int  i, listenfd, connfd, port, clientlen = sizeof( struct sockaddr_in );
+    int listenfd, connfd, port, clientlen = sizeof(struct sockaddr_in);
     struct sockaddr_in clientaddr;
     pthread_t tid;
+    int ret, i;    /* return-value, index */
 
-    if(argc != 2){   /* arg number != 2 ? */
-        fprintf( stderr, "usage: %s <port>\n", argv[0] );   /* e.t. usage: name 1234 */
-        exit( 0 );
+    if(argc != 2){    /* arg number != 2 ? */
+        fprintf(stderr, "usage: %s <port>\n", argv[0]);    /* e.t. usage: name 1234 */
+        exit(1);
     }
-    port = atoi( argv[1] );   /* numeric port */
-    sbuf_init( &sbuf, SBUFSIZE );    /* init connection buffer */
+    port = atoi(argv[1]);    /* numeric port */
+    
+    sbuf_init(&sbuf, SBUFSIZE );    /* init connection buffer */
     listenfd = open_listenfd( port );   /* open listen port and get listen fd */
 
-    for( i = 0; i < NTHREADS; i++)   /* create worker threads */
-        pthread_create( &tid, NULL, thread, NULL);
+    for(i = 0; i < NTHREADS; i++){   /* create worker threads */
+        ret = pthread_create(&tid, NULL, thread, NULL);
+        if(ret != 0){
+            fprintf(stderr,  "create worker thread %d failed. \n", i);
+        }
+    }
     while(1){
-        connfd = accept( listenfd, (SA*)&clientaddr, &clientlen);   /* get request from client */
+        connfd = accept(listenfd, (SA*)&clientaddr, &clientlen);   /* get request from client */
         printf("client (%s:%d) has established connection, and connfd is %d\n",
                inet_ntoa( clientaddr.sin_addr ),    /* client's IP address */
                ntohs( clientaddr.sin_port), connfd );    /* client's port */
