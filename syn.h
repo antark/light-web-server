@@ -12,9 +12,9 @@ typedef struct{
     int n;               /* maximum number of slots */
     int front;            /* the index of first item */
     int rear;             /* the index of last item */
-    sem_t mutex;        /* protects access to buf exclusively */
-    sem_t slots;          /* counts available slots */
-    sem_t items;         /* counts available items */
+    sem_t *mutex;        /* protects access to buf exclusively */
+    sem_t *slots;          /* counts available slots */
+    sem_t *items;         /* counts available items */
 }sbuf_t;
 
 #endif

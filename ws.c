@@ -16,7 +16,8 @@ sbuf_t sbuf;     /* connection buffer pool */
 
 int main(int argc, char *argv[] )
 {
-    int listenfd, connfd, port, clientlen = sizeof(struct sockaddr_in);
+    int listenfd, connfd, port;
+    unsigned int clientlen = sizeof(struct sockaddr_in);
     struct sockaddr_in clientaddr;
     pthread_t tid;
     int ret, i;    /* return-value, index */
@@ -69,6 +70,7 @@ void doit(int fd)     /* support service through fd */
     
     rio_readlineb(&rio, buf, MAXLINE );   /* read the request line */
     sscanf(buf, "%s %s %s", method, url, version);    /* method, url, version */
+    printf("%s", buf);
     
     if( strcasecmp(method, "GET") ){    /* method is not GET ? */
         clienterror(fd, method, "501", "Not implemented", "ws does not implement this method except GET");
@@ -109,7 +111,7 @@ void clienterror( int fd, char *cause, char *errnum, char *shortmsg, char *longm
     sprintf( body , "<html><title>ws:a simple server</title>");
     sprintf( body, "%s<body bgcolor=""fffff"">\r\n", body);
     sprintf( body, "%s%s:%s\r\n", body, errnum, shortmsg );
-    sprintf( body, "%s<p>%s:\r\n", body, longmsg, cause );
+    sprintf( body, "%s%s:%s:\r\n", body, longmsg, cause );
     sprintf( body, "%s<hr><em>a simpler web server</em>\r\n", body);
 
    /* print the HTTP response */
@@ -117,7 +119,7 @@ void clienterror( int fd, char *cause, char *errnum, char *shortmsg, char *longm
     rio_writen( fd, buf, strlen(buf) );
     sprintf( buf, "Content-Type: text/html\r\n");
     rio_writen(fd,buf, strlen(buf) );
-    sprintf( buf, "Content-length: %d\r\n\r\n", strlen(body) );
+    sprintf( buf, "Content-length: %ld\r\n\r\n", strlen(body) );
     rio_writen( fd, buf, strlen(buf) );
 
     /* print the response body */
@@ -193,10 +195,18 @@ void get_filetype(char *filename, char *filetype)
 {
     if( strstr(filename, ".html") )     /* html */
         strcpy( filetype, "text/html" );
-    else if( strstr(filename, ".gif") )    /* gif */
-        strcpy( filetype, "image/gif");
+    else if(strstr(filename, ".xml"))
+        strcpy(filetype, "application/xml");
+    else if(strstr(filename, ".pgn"))
+        strcpy(filetype, "image/pgn");
     else if( strstr( filename, ".jpg") )   /* jpg */
         strcpy( filetype, "image/jpeg");
+    else if( strstr(filename, ".gif") )    /* gif */
+        strcpy( filetype, "image/gif");
+    else if(strstr(filename, ".ico"))
+        strcpy(filetype, "image/x-icon");
+    else if(strstr(filename, ".pdf"))
+        strcpy(filetype, "application/pdf");
     else  /* others */
         strcpy( filetype, "text/plain");
 }

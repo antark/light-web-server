@@ -1,1 +1,30 @@
-this is home.html
+<!doctype html5>
+<html>
+<head>
+  <title>main page|ws</title>
+  <meta charset="utf-i" />
+<style>
+  html{font-size: small;}
+  h2{font-size:1.4em; margin: 5px 0;}
+  table, ul, ol, li, p{line-height: 1.5em; font-size: 1.2em;}
+</style>
+</head>
+<body>
+<h2>测试 cgi</h2>
+<form method="GET" action="cgi-bin/register">
+<table>
+    <tr>
+        <td>username:</td>
+       <td><input type="text" name="usr" /><br/></td>
+    </tr>
+    <tr>
+        <td>password:</td>
+       <td><input type="password" name="pwd" /><br/></td>
+    </tr>
+    <tr>
+       <td colspan="2" align="center"><input type="submit" name="submit" value="register" />
+    </tr>
+</table>
+</form>
+</body>
+</html>
