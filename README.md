@@ -1,9 +1,16 @@
 #### light web server
-----
+
 
 #######使用 c 实现的一个并发的web服务器。具有基本功能#######
+
 <sup><sub>1. 部分实现了 HTTP/1.1，可以提供基本的 web 静态服务</sub></sup><br />
 <sup><sub>2. 允许并发</sub></sup><br />
+
+#######使用方式#######
+$ make   // 编译代码
+$ ./ws 1234   // 启动server进程，端口是 1234
+
+浏览器中访问：http://localhost:12345/webapp/demo/assets/img/miaoxingren.jpg
 
 
 #######知识#######
